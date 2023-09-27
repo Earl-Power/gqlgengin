@@ -7,19 +7,33 @@ package graph
 import (
 	"context"
 	"fmt"
+	"github.com/Earl-Power/gqlgengin/internal/links"
+	"strconv"
 
 	"github.com/Earl-Power/gqlgengin/graph/model"
 )
 
 func (r *mutationResolver) CreateLink(ctx context.Context, input model.NewLink) (*model.Link, error) {
-	var link model.Link
-	var user model.User
-	link.Address = input.Address
+	var link links.Link
 	link.Title = input.Title
-	user.Name = "test"
-	link.User = &user
-	return &link, nil
+	link.Address = input.Address
+	linkID := link.Save()
+	// 错误引用
+	// return &model.Link{ID: strconv.FormatInt(linkID, 10), Title: link.Title, Address: link.Address}, nil
+	// 指针类型引用
+	var tmp = strconv.FormatInt(linkID, 10)
+	return &model.Link{ID: &tmp, Title: link.Title, Address: link.Address}, nil
 }
+
+//func (r *mutationResolver) CreateLink(ctx context.Context, input model.NewLink) (*model.Link, error) {
+//	var link model.Link
+//	var user model.User
+//	link.Address = input.Address
+//	link.Title = input.Title
+//	user.Name = "test"
+//	link.User = &user
+//	return &link, nil
+//}
 
 /*
 mutation createLink{

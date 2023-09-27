@@ -2,10 +2,10 @@ package database
 
 import (
 	"database/sql"
-	"errors"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/mysql"
+	"github.com/golang-migrate/migrate"
+	"github.com/golang-migrate/migrate/database/mysql"
+	_ "github.com/golang-migrate/migrate/source/file"
 	"log"
 )
 
@@ -34,10 +34,11 @@ func Migrate() {
 	driver, _ := mysql.WithInstance(Db, &mysql.Config{})
 	m, _ := migrate.NewWithDatabaseInstance(
 		"file://internal/pkg/db/migrations/mysql",
-		"mydwl",
+		"mysql",
 		driver,
 	)
-	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		log.Fatal(err)
 	}
+
 }
