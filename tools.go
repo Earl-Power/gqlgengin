@@ -1,6 +1,7 @@
 //go:build tools
 // +build tools
 
+// go: go run github.com/99designs/gqlgen generate
 package tools
 
 import (

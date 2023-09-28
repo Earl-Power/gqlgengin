@@ -16,4 +16,5 @@ cd internal/pkg/db/migrations/
 migrate create -ext sql -dir mysql -seq create_users_table
 migrate create -ext sql -dir mysql -seq create_links_table
 
-migrate -database mysql://root:dbpass@/hackernews -path internal/pkg/db/migrations/mysql up
+Run this command in your project root directory:
+migrate -database "mysql://root:root@tcp(localhost:3306)/gqlgengin" -path internal/pkg/db/migrations/mysql -verbose up

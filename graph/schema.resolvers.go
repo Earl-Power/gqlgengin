@@ -25,6 +25,16 @@ func (r *mutationResolver) CreateLink(ctx context.Context, input model.NewLink) 
 	return &model.Link{ID: &tmp, Title: link.Title, Address: link.Address}, nil
 }
 
+/*
+mutation NewCreateLink{
+  createLink(input: {title: "earl_title", address: "earl_address"}){
+    title,
+    address,
+    id,
+  }
+}
+*/
+
 //func (r *mutationResolver) CreateLink(ctx context.Context, input model.NewLink) (*model.Link, error) {
 //	var link model.Link
 //	var user model.User
@@ -62,6 +72,30 @@ func (r *mutationResolver) RefreshToken(ctx context.Context, input model.Refresh
 	panic(fmt.Errorf("not implemented: RefreshToken - refreshToken"))
 }
 
+// Links data from database
+func (r *queryResolver) Links(ctx context.Context) ([]*model.Link, error) {
+	var resultLinks []*model.Link
+	var dblinks []links.Link
+	dblinks = links.GetAll()
+	for _, link := range dblinks {
+		var ID = link.ID
+		resultLinks = append(resultLinks, &model.Link{ID: &ID, Title: link.Title, Address: link.Address})
+	}
+	return resultLinks, nil
+}
+
+/*
+query links_From_DB{
+  links {
+    title
+    address
+    id
+  }
+}
+*/
+
+// localhost data test
+/*
 func (r *queryResolver) Links(ctx context.Context) ([]*model.Link, error) {
 	var links []*model.Link
 	dummyLink := model.Link{
