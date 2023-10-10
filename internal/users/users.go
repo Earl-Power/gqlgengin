@@ -19,7 +19,7 @@ func HashPassword(password string) (string, error) {
 }
 
 func (user *User) Create() {
-	statement, err := database.Db.Prepare("INSERT INTO User(Username,Password) VALUES (?,?)")
+	statement, err := database.Db.Prepare("INSERT INTO Users(Username,Password) VALUES (?,?)")
 	print(statement)
 	if err != nil {
 		log.Fatal(err)
@@ -51,4 +51,23 @@ func GetUserIdByUsername(username string) (int, error) {
 		return 0, err
 	}
 	return Id, nil
+}
+
+func (user *User) Authenticate() bool {
+	statement, err := database.Db.Prepare("select Password form Users WHERE Username = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	row := statement.QueryRow(user.Username)
+
+	var hashedPassword string
+	err = row.Scan(&hashedPassword)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false
+		} else {
+			log.Fatal(err)
+		}
+	}
+	return CheckPasswordHash(user.Password, hashedPassword)
 }

@@ -7,7 +7,10 @@ package graph
 import (
 	"context"
 	"fmt"
+	"github.com/Earl-Power/gqlgengin/internal/auth"
 	"github.com/Earl-Power/gqlgengin/internal/links"
+	"github.com/Earl-Power/gqlgengin/internal/pkg/jwt"
+	"github.com/Earl-Power/gqlgengin/internal/users"
 	"strconv"
 
 	"github.com/Earl-Power/gqlgengin/graph/model"
@@ -17,13 +20,40 @@ func (r *mutationResolver) CreateLink(ctx context.Context, input model.NewLink) 
 	var link links.Link
 	link.Title = input.Title
 	link.Address = input.Address
+	user := auth.ForContext(ctx)
+
+	if user == nil {
+		return &model.Link{}, fmt.Errorf("access denied")
+	}
+
+	link.User = user
 	linkID := link.Save()
+	graphqlUser := &model.User{
+		ID:   &user.ID,
+		Name: user.Username,
+	}
+
 	// 错误引用
 	// return &model.Link{ID: strconv.FormatInt(linkID, 10), Title: link.Title, Address: link.Address}, nil
 	// 指针类型引用
-	var tmp = strconv.FormatInt(linkID, 10)
-	return &model.Link{ID: &tmp, Title: link.Title, Address: link.Address}, nil
+	var ConvertLinkID = strconv.FormatInt(linkID, 10)
+	return &model.Link{ID: &ConvertLinkID, Title: link.Title, Address: link.Address, User: graphqlUser}, nil
 }
+
+/*
+mutation NeedTokenViewer{
+  createLink(input: {title: "real link!", address: "www.graphql.org"}){
+    user{
+      name
+    }
+  }
+}
+
+Headers
+{
+  "Authorization": "OWN TOKEN"
+}
+*/
 
 /*
 mutation NewCreateLink{
@@ -59,17 +89,48 @@ mutation createLink{
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (string, error) {
-	panic(fmt.Errorf("not implemented: CreateUser - createUser"))
+	// panic(fmt.Errorf("not implemented: CreateUser - createUser"))
+	var user users.User
+	user.Username = input.Username
+	user.Password = input.Password
+	user.Create()
+	token, err := jwt.GenerateToken(user.Username)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }
 
 // Login is the resolver for the login field.
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (string, error) {
-	panic(fmt.Errorf("not implemented: Login - login"))
+	// panic(fmt.Errorf("not implemented: Login - login"))
+	var user users.User
+	user.Username = input.Username
+	user.Password = input.Password
+	correct := user.Authenticate()
+	if !correct {
+		return "", &users.WrongUsernameOrPasswordError{}
+	}
+
+	token, err := jwt.GenerateToken(user.Username)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }
 
 // RefreshToken is the resolver for the refreshToken field.
 func (r *mutationResolver) RefreshToken(ctx context.Context, input model.RefreshTokenInput) (string, error) {
-	panic(fmt.Errorf("not implemented: RefreshToken - refreshToken"))
+	// panic(fmt.Errorf("not implemented: RefreshToken - refreshToken"))
+	username, err := jwt.ParseToken(input.Token)
+	if err != nil {
+		return "", fmt.Errorf("access denied")
+	}
+	token, err := jwt.GenerateToken(username)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }
 
 // Links data from database
@@ -78,8 +139,12 @@ func (r *queryResolver) Links(ctx context.Context) ([]*model.Link, error) {
 	var dblinks []links.Link
 	dblinks = links.GetAll()
 	for _, link := range dblinks {
-		var ID = link.ID
-		resultLinks = append(resultLinks, &model.Link{ID: &ID, Title: link.Title, Address: link.Address})
+		graphqlUser := &model.User{
+			ID:   &link.User.ID,
+			Name: link.User.Username,
+		}
+		var ConvertID = link.ID
+		resultLinks = append(resultLinks, &model.Link{ID: &ConvertID, Title: link.Title, Address: link.Address, User: graphqlUser})
 	}
 	return resultLinks, nil
 }
