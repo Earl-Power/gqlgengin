@@ -54,7 +54,7 @@ func GetUserIdByUsername(username string) (int, error) {
 }
 
 func (user *User) Authenticate() bool {
-	statement, err := database.Db.Prepare("select Password form Users WHERE Username = ?")
+	statement, err := database.Db.Prepare("select Password from Users WHERE Username = ?")
 	if err != nil {
 		log.Fatal(err)
 	}
